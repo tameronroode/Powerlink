@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/employee.dart';
-import '../../services/authentication.dart';
+import 'package:powerlink_crm/models/employee.dart';
+import 'package:powerlink_crm/services/authentication.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});

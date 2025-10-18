@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/customer.dart';
-import '../models/employee.dart';
+import 'package:powerlink_crm/models/customer.dart';
+import 'package:powerlink_crm/models/employee.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
