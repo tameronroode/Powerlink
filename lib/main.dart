@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:powerlink_crm/screens/add_customer_screen.dart';
-import 'package:powerlink_crm/screens/customers_screen.dart';
-import 'package:powerlink_crm/screens/dashboard_screen.dart';
+import 'package:powerlink_crm/screens/customer_dashboard.dart';
 import 'package:powerlink_crm/screens/help_chat_screen.dart';
+import 'package:powerlink_crm/screens/sales_summary.dart';
+import 'package:powerlink_crm/screens/service_request.dart';
 import 'package:powerlink_crm/screens/settings_screen.dart';
 import 'package:powerlink_crm/screens/sign_in.dart';
 import 'package:powerlink_crm/screens/sign_up.dart';
@@ -41,10 +42,6 @@ class PowerLinkCRM extends StatelessWidget {
         '/login': (context) => const SignIn(),
         // The new placeholder screen for user registration.
         '/signup': (context) => const SignUp(),
-        // The main dashboard shown after a successful login.
-        '/dashboard': (context) => const DashboardScreen(),
-        // Screen to view the list of all customers.
-        '/customers': (context) => const CustomersScreen(),
         // Form to add a new customer to the database.
         '/addCustomer': (context) => const AddCustomerScreen(),
         // Screen to view and manage scheduled visits.
@@ -53,6 +50,10 @@ class PowerLinkCRM extends StatelessWidget {
         '/helpChat': (context) => const HelpChatScreen(),
         // Screen for user settings and profile information.
         '/settings': (context) => const SettingsScreen(),
+        // Stean's new screens
+        '/customerDashboard': (context) => CustomerDashboard(),
+        '/serviceRequest': (context) => ServiceRequestPage(),
+        '/salesSummary': (context) => SalesSummary(),
       },
     );
   }

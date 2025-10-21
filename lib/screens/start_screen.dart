@@ -6,22 +6,21 @@ class StartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2C426A),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.flash_on,
-                color: Colors.white,
-                size: 100,
+              Image.asset(
+                'assets/images/app_logo.png',
+                height: 150,
               ),
               const SizedBox(height: 40),
               const Text(
                 "Welcome to PowerLink",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF2C426A),
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
@@ -30,7 +29,7 @@ class StartScreen extends StatelessWidget {
               const Text(
                 "Boost your business connections effortlessly.",
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Colors.black54,
                   fontSize: 16,
                 ),
                 textAlign: TextAlign.center,
@@ -42,7 +41,7 @@ class StartScreen extends StatelessWidget {
                   Navigator.pushNamed(context, '/welcome');
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: const Color(0xFF2C426A),
                   padding:
                   const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                   shape: RoundedRectangleBorder(
@@ -52,7 +51,7 @@ class StartScreen extends StatelessWidget {
                 child: const Text(
                   "Get Started",
                   style: TextStyle(
-                    color: Color(0xFF2C426A),
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),

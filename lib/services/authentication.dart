@@ -144,4 +144,18 @@ class AuthService {
       print('Supabase sign-out error: ${e.message}');
     }
   }
+
+  // Send a password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
+      print('Supabase password reset error: ${e.message}');
+      // Re-throw the exception to be handled in the UI
+      throw Exception('Failed to send password reset email: ${e.message}');
+    } catch (e) {
+      print('An unexpected error occurred: $e');
+      throw Exception('An unexpected error occurred during password reset.');
+    }
+  }
 }

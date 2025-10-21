@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:powerlink_crm/models/employee.dart';
 import 'package:powerlink_crm/services/authentication.dart';
+import 'forgotten_password_screen.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -33,18 +34,18 @@ class SignInState extends State<SignIn> {
     if (!mounted) return;
 
     if (result != null) {
-      if (result is Employee) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      } else {
-        // For now, customers are also redirected to dashboard.
-        // This can be changed to a customer-specific home screen.
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      }
+      // Navigate to the new customer dashboard created by Stean
+      Navigator.pushReplacementNamed(context, '/customerDashboard');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sign-in failed. Please check your credentials.')),
       );
     }
+  }
+
+  void _signInAsGuest() {
+    // For development purposes, navigate directly to the dashboard
+    Navigator.pushReplacementNamed(context, '/customerDashboard');
   }
 
   @override
@@ -152,11 +153,31 @@ class SignInState extends State<SignIn> {
                                 ),
                               ),
                             ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
+                      // Guest Sign In Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: _signInAsGuest,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                          ),
+                          child: const Text(
+                            "Sign in as Guest (Dev)",
+                            style: TextStyle(
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text("Don’t have an account?"),
+                          const Text("Don\u2019t have an account?"),
                           TextButton(
                             onPressed: () {
                               // Navigate to sign up screen using its named route.
@@ -171,7 +192,10 @@ class SignInState extends State<SignIn> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // TODO: Implement navigation to a future Forgot Password screen.
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ForgottenPassword()),
+                          );
                         },
                         child: const Text("Forgot Password"),
                       ),

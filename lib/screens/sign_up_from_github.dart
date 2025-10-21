@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:powerlink_crm/services/authentication.dart';
 import 'sign_in.dart';
 
 class SignUp extends StatefulWidget {
@@ -10,62 +9,23 @@ class SignUp extends StatefulWidget {
 }
 
 class SignUpState extends State<SignUp> {
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
-  bool _isLoading = false;
 
-  void signUp() async {
-    if (firstNameController.text.isEmpty ||
-        lastNameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        confirmController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields")),
-      );
-      return;
-    }
-
-    if (passwordController.text != confirmController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    final authService = AuthService();
-    final customer = await authService.signUpCustomer(
-      firstName: firstNameController.text,
-      lastName: lastNameController.text,
-      email: emailController.text,
-      password: passwordController.text,
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (customer != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sign up successful! Please sign in.")),
-      );
+  void signUp() {
+    if (emailController.text.isNotEmpty &&
+        passwordController.text.isNotEmpty &&
+        confirmController.text.isNotEmpty) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const SignIn()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Sign up failed. The email may already be in use.")),
+        const SnackBar(content: Text("Please fill in all fields")),
       );
     }
   }
@@ -78,8 +38,8 @@ class SignUpState extends State<SignUp> {
           child: Column(
             children: [
               const SizedBox(height: 50),
-              Image.network(
-                "https://img.freepik.com/free-vector/business-people-working-project-together_74855-6300.jpg",
+              Image.asset(
+                "assets/images/signup_illustration.png",
                 height: 250,
                 fit: BoxFit.cover,
               ),
@@ -93,38 +53,6 @@ class SignUpState extends State<SignUp> {
                 ),
               ),
               const SizedBox(height: 30),
-
-              // First Name Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: firstNameController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.person_outline),
-                    labelText: "First Name",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Last Name Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: lastNameController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.person_outline),
-                    labelText: "Last Name",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
 
               // Email Field
               Padding(
@@ -196,22 +124,20 @@ class SignUpState extends State<SignUp> {
               ),
               const SizedBox(height: 30),
 
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: signUp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2C426A),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 60, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                      ),
-                      child: const Text(
-                        "Sign Up",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                    ),
+              ElevatedButton(
+                onPressed: signUp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2C426A),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 60, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                ),
+                child: const Text(
+                  "Sign Up",
+                  style: TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
               const SizedBox(height: 25),
 
               GestureDetector(
