@@ -19,4 +19,4 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-di
 EXPOSE 8080
 
 # RUNTIME: now env vars exist, so clear caches, run migrations, then serve
-CMD ["sh","-c","php artisan config:clear && php artisan cache:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["sh","-c","php artisan config:clear && php artisan cache:clear && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
