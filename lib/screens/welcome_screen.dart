@@ -5,10 +5,14 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get theme data for styling that adapts to light/dark mode
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -26,68 +30,59 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                  child: const Text(
-                    "Experience Seamless CRM \n      and Data Anytime",
+                  margin: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    "Experience Seamless CRM \nand Data Anytime",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFF000000),
-                      fontSize: 21,
+                    // This will now use the theme's color for titles
+                    style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Row(
                     children: [
                       Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            // Navigate to the Sign In screen using its named route.
+                        // Use ElevatedButton for the primary action
+                        child: ElevatedButton(
+                          onPressed: () {
                             Navigator.pushNamed(context, '/login');
                           },
-                          child: Container(
+                          style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF366EFA),
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Center(
-                              child: Text(
-                                "Login",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          ),
+                          child: const Text(
+                            "Login",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 20),
                       Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            // Navigate to the Sign Up screen using its named route.
+                        // Use OutlinedButton for the secondary action
+                        child: OutlinedButton(
+                          onPressed: () {
                             Navigator.pushNamed(context, '/signup');
                           },
-                          child: Container(
+                          style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0x66000000), width: 2),
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Center(
-                              child: Text(
-                                "Sign Up",
-                                style: TextStyle(
-                                  color: Color(0xFF353434),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          ),
+                          child: const Text(
+                            "Sign Up",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -96,29 +91,22 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Column(
-                    children: const [
-                      Text(
-                        "By signing up, you agree to our Terms and Condition.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        "Learn how we use your data in our Privacy Policy.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
+                Column(
+                  children: [
+                    Text(
+                      "By signing up, you agree to our Terms and Condition.",
+                      textAlign: TextAlign.center,
+                      // This text will now adapt to the theme
+                      style: textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      "Learn how we use your data in our Privacy Policy.",
+                      textAlign: TextAlign.center,
+                      // This text will also adapt to the theme
+                      style: textTheme.bodySmall,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 30),
               ],

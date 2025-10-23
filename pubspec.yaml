@@ -29,6 +29,12 @@ dependencies:
   # The official Flutter client for Supabase (handles auth and database access).
   supabase_flutter: ^2.5.0
 
+  # For picking images from the device's gallery or camera.
+  image_picker: ^1.0.4
+
+  # For state management, used here for theme switching.
+  provider: ^6.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

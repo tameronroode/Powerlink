@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:powerlink_crm/services/authentication.dart'; // Import the AuthService
-import 'appearance_screen.dart';
+import 'package:powerlink_crm/screens/appearance_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+class CustomerSettingsScreen extends StatelessWidget {
+  const CustomerSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +14,20 @@ class SettingsScreen extends StatelessWidget {
         const SizedBox(height: 20),
         _buildSettingsTile(
           context,
-          icon: Icons.notifications_outlined,
-          title: 'Notifications',
-          subtitle: 'Manage push notifications and email alerts',
+          icon: Icons.subscriptions_outlined,
+          title: 'Manage Subscription',
+          subtitle: 'View your plan, billing history, and invoices',
           onTap: () {
-            print("Navigate to Notifications");
+            print("Navigate to Subscription Management");
+          },
+        ),
+        _buildSettingsTile(
+          context,
+          icon: Icons.payment_outlined,
+          title: 'Payment Information',
+          subtitle: 'Update your credit card or other payment methods',
+          onTap: () {
+            print("Navigate to Payment Information");
           },
         ),
         _buildSettingsTile(
@@ -37,9 +46,9 @@ class SettingsScreen extends StatelessWidget {
           context,
           icon: Icons.security_outlined,
           title: 'Security',
-          subtitle: 'Change your password and manage 2FA',
+          subtitle: 'Change your password and manage account security',
           onTap: () {
-            print("Navigate to Security Settings");
+            print("Navigate to Customer Security");
           },
         ),
         const Divider(height: 40, thickness: 1),
@@ -70,7 +79,8 @@ class SettingsScreen extends StatelessWidget {
     required VoidCallback onTap,
     Color? color,
   }) {
-    final tileColor = color ?? Theme.of(context).textTheme.bodyLarge?.color;
+    final theme = Theme.of(context);
+    final tileColor = color ?? theme.textTheme.bodyLarge?.color;
 
     return ListTile(
       leading: Icon(icon, color: tileColor),
@@ -78,7 +88,10 @@ class SettingsScreen extends StatelessWidget {
         title,
         style: TextStyle(fontWeight: FontWeight.bold, color: tileColor),
       ),
-      subtitle: Text(subtitle),
+      subtitle: Text(
+        subtitle,
+        style: theme.textTheme.bodySmall?.copyWith(color: color != null ? color.withOpacity(0.8) : null),
+      ),
       onTap: onTap,
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:powerlink_crm/screens/employee_dashboard.dart';
+import 'package:powerlink_crm/screens/customer_dashboard.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,40 +14,56 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    _redirect();
   }
 
-  Future<void> _initializeApp() async {
+  Future<void> _redirect() async {
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    final supabase = Supabase.instance.client;
+    final session = supabase.auth.currentSession;
+
+    if (session == null) {
+      // No active session, go to the start screen.
+      Navigator.of(context).pushReplacementNamed('/start');
+      return;
+    }
+
     try {
-      // Initialize services in the background.
-      await dotenv.load(fileName: ".env");
-      await Supabase.initialize(
-        url: dotenv.env['SUPABASE_URL']!,
-        anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-      );
-
-      // Wait for a short period to ensure the splash screen is visible.
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
+      // Session exists, so we have a user ID.
+      final userId = session.user.id;
       
-      // Navigate to the new StartScreen, which serves as our onboarding.
-      Navigator.pushReplacementNamed(context, '/start');
+      // Check the employees table to see if this user is an employee.
+      final employeeResponse = await supabase
+          .from('employees')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
 
+      if (!mounted) return;
+
+      if (employeeResponse != null) {
+        // A record was found in the employees table.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const EmployeeDashboard()),
+        );
+      } else {
+        // No record found, so they must be a customer.
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const CustomerDashboard()),
+        );
+      }
     } catch (e) {
-      print('❌ Error during initialization: $e');
-      // In case of an error, still attempt to navigate after a delay.
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-      
-      Navigator.pushReplacementNamed(context, '/start');
+      print('Error during splash screen redirect: $e');
+      // On any error, fall back to the start screen for safety.
+      Navigator.of(context).pushReplacementNamed('/start');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // The UI is now just the centered logo, which serves as the splash screen.
     return const Scaffold(
-      backgroundColor: Colors.white, // Match the logo's background
       body: Center(
         child: Image(image: AssetImage('assets/images/splash_logo.png')),
       ),

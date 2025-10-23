@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:powerlink_crm/models/employee.dart';
 import 'package:powerlink_crm/services/authentication.dart';
+import 'package:powerlink_crm/screens/employee_dashboard.dart';
+import 'package:powerlink_crm/screens/customer_dashboard.dart';
 import 'forgotten_password_screen.dart';
+import 'package:powerlink_crm/models/employee.dart';
+import 'package:powerlink_crm/models/customer.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -22,185 +25,171 @@ class SignInState extends State<SignIn> {
       _isLoading = true;
     });
 
-    final result = await _authService.signIn(
-      emailController.text.trim(),
-      passwordController.text.trim(),
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (!mounted) return;
-
-    if (result != null) {
-      // Navigate to the new customer dashboard created by Stean
-      Navigator.pushReplacementNamed(context, '/customerDashboard');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign-in failed. Please check your credentials.')),
+    try {
+      final result = await _authService.signIn(
+        emailController.text.trim(),
+        passwordController.text.trim(),
       );
-    }
-  }
 
-  void _signInAsGuest() {
-    // For development purposes, navigate directly to the dashboard
-    Navigator.pushReplacementNamed(context, '/customerDashboard');
+      if (!mounted) return;
+
+      if (result != null) {
+        if (result is Employee) {
+          // Employee dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const EmployeeDashboard()),
+          );
+        } else if (result is Customer) {
+          // Customer dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const CustomerDashboard()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unknown user type.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sign-in failed. Please check your email and password.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sign-in error: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       body: SafeArea(
-        child: Container(
-          constraints: const BoxConstraints.expand(),
-          color: const Color(0xFFFFFFFF),
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(28.0),
             child: Column(
               children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      height: 320,
-                      width: double.infinity,
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-                        child: Image.asset(
-                          "assets/images/welcome_illustration.png",
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 50),
+                Text(
+                  "Sign In To PowerLink",
+                  style: textTheme.headlineMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(28.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Sign In To PowerLink",
-                        style: TextStyle(
-                          color: Color(0xFF182D53),
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
+                const SizedBox(height: 32),
+                // Email
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    hintText: "Enter your email",
+                    labelText: "Email Address",
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 22),
+                // Password
+                TextField(
+                  controller: passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    hintText: "Enter your password",
+                    labelText: "Password",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
-                      const SizedBox(height: 32),
-                      // Email Field
-                      TextField(
-                        controller: emailController,
-                        decoration: InputDecoration(
-                          hintText: "Enter your email",
-                          labelText: "Email Address",
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(100),
-                            borderSide: const BorderSide(color: Color(0xFFB59F5E)),
-                          ),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 22),
-                      // Password Field
-                      TextField(
-                        controller: passwordController,
-                        obscureText: _obscurePassword,
-                        decoration: InputDecoration(
-                          hintText: "Enter your password",
-                          labelText: "Password",
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 23),
-                      // Sign In Button
-                      _isLoading
-                          ? const CircularProgressIndicator()
-                          : SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: _signIn,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2C426A),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(100),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.login, color: Colors.white),
-                                label: const Text(
-                                  "Sign In",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                      const SizedBox(height: 12),
-                      // Guest Sign In Button
-                      SizedBox(
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 23),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _signInAsGuest,
-                          style: OutlinedButton.styleFrom(
+                        child: ElevatedButton.icon(
+                          onPressed: _signIn,
+                          style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(100),
                             ),
                           ),
-                          child: const Text(
-                            "Sign in as Guest (Dev)",
+                          icon: const Icon(Icons.login),
+                          label: const Text(
+                            "Sign In",
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text("Don\u2019t have an account?"),
-                          TextButton(
-                            onPressed: () {
-                              // Navigate to sign up screen using its named route.
-                              Navigator.pushNamed(context, '/signup');
-                            },
-                            child: const Text(
-                              "Sign Up",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Don't have an account?", style: textTheme.bodyMedium),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/signup');
+                      },
+                      child: const Text(
+                        "Sign Up",
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ForgottenPassword()),
-                          );
-                        },
-                        child: const Text("Forgot Password"),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ForgottenPassword()),
+                    );
+                  },
+                  child: const Text("Forgot Password"),
+                ),
+                // Add the guest login for easier testing
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CustomerDashboard()),
+                    );
+                  },
+                  child: const Text("Continue as Guest"),
                 ),
               ],
             ),

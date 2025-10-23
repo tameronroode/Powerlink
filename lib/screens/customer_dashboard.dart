@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'service_request.dart'; // Make sure this exists
+import 'package:powerlink_crm/screens/customer_messages_screen.dart';
+import 'package:powerlink_crm/screens/customer_profile_screen.dart';
+import 'package:powerlink_crm/screens/customer_support_screen.dart';
+import 'package:powerlink_crm/screens/customer_settings_screen.dart'; // Import the new settings screen
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -10,13 +13,14 @@ class CustomerDashboard extends StatefulWidget {
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
   int _selectedIndex = 0;
-  static const Color mainBlue = Color(0xFF2023E8);
 
+  // Add the new CustomerSettingsScreen to the list of pages
   final List<Widget> _pages = const [
     _HomePage(),
-    _MessagesPlaceholder(),
-    ServiceRequestPage(),
-    _ProfilePlaceholder(),
+    CustomerMessagesScreen(),
+    CustomerSupportScreen(),
+    CustomerProfileScreen(),
+    CustomerSettingsScreen(), // New settings page
   ];
 
   void _onItemTapped(int index) {
@@ -28,29 +32,27 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: mainBlue,
         elevation: 0,
         title: const Text(
           'Customer Dashboard',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        selectedItemColor: mainBlue,
-        unselectedItemColor: Colors.grey,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
+        type: BottomNavigationBarType.fixed, // Ensures labels are always visible
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Messages'),
           BottomNavigationBarItem(icon: Icon(Icons.support_agent), label: 'Support'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          // Add the new settings icon to the nav bar
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
     );
@@ -61,10 +63,11 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
 class _HomePage extends StatelessWidget {
   const _HomePage();
 
-  static const Color mainBlue = Color(0xFF2023E8);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     final products = [
       {'name': 'Premium Package', 'description': 'Access to premium tools and reports', 'price': 'R499/month'},
       {'name': 'Standard Package', 'description': 'Basic analytics and insights', 'price': 'R299/month'},
@@ -76,40 +79,35 @@ class _HomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Quick Actions',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: mainBlue,
-            ),
+            style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.primaryColor),
           ),
           const SizedBox(height: 10),
           _buildActionCard(
+            context,
             icon: Icons.shopping_bag,
             title: 'My Orders',
             description: 'View and track your past and ongoing orders.',
           ),
           _buildActionCard(
+            context,
             icon: Icons.store,
             title: 'Browse Products',
             description: 'Explore more products and services available.',
           ),
           _buildActionCard(
+            context,
             icon: Icons.support_agent,
             title: 'Contact Employee',
             description: 'Reach out to an employee for direct assistance.',
           ),
           const SizedBox(height: 25),
-          const Text(
+          Text(
             'Available Products',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: mainBlue,
-            ),
+            style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.primaryColor),
           ),
           const SizedBox(height: 10),
           ...products.map((p) {
@@ -122,38 +120,40 @@ class _HomePage extends StatelessWidget {
                 subtitle: Text(p['description']!),
                 trailing: Text(
                   p['price']!,
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: mainBlue),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor),
                 ),
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       children: [
         const CircleAvatar(
           radius: 30,
-          backgroundImage: AssetImage('assets/profile_placeholder.png'),
+          child: Icon(Icons.person, size: 30),
         ),
         const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'Good Morning, Alex',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: mainBlue,
+                color: theme.primaryColor,
               ),
             ),
             Text(
               'Welcome back!',
-              style: TextStyle(color: Colors.grey),
+              style: theme.textTheme.bodySmall,
             ),
           ],
         ),
@@ -161,46 +161,24 @@ class _HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionCard({
+  Widget _buildActionCard(BuildContext context, {
     required IconData icon,
     required String title,
     required String description,
   }) {
+    final theme = Theme.of(context);
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 3,
       child: ListTile(
-        leading: Icon(icon, color: mainBlue, size: 30),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: mainBlue)),
+        leading: Icon(icon, color: theme.primaryColor, size: 30),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor)),
         subtitle: Text(description),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: theme.textTheme.bodySmall?.color),
         onTap: () {},
       ),
-    );
-  }
-}
-
-// ------------------------ MESSAGES PLACEHOLDER ------------------------
-class _MessagesPlaceholder extends StatelessWidget {
-  const _MessagesPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Messages tab will be implemented later.'),
-    );
-  }
-}
-
-// ------------------------ PROFILE PLACEHOLDER ------------------------
-class _ProfilePlaceholder extends StatelessWidget {
-  const _ProfilePlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Profile tab will be implemented later.'),
     );
   }
 }
