@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:powerlink_crm/services/authentication.dart';
 import 'package:powerlink_crm/screens/employee_dashboard.dart';
 import 'package:powerlink_crm/screens/customer_dashboard.dart';
+import 'package:powerlink_crm/screens/manager_dashboard.dart'; // Added by Gemini
 import 'forgotten_password_screen.dart';
 import 'package:powerlink_crm/models/employee.dart';
 import 'package:powerlink_crm/models/customer.dart';
@@ -35,11 +36,19 @@ class SignInState extends State<SignIn> {
 
       if (result != null) {
         if (result is Employee) {
-          // Employee dashboard
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const EmployeeDashboard()),
-          );
+          // Check for manager role and navigate accordingly
+          if (result.role != null && result.role!.toLowerCase() == 'manager') {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const ManagerDashboard()),
+            );
+          } else {
+            // Employee dashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const EmployeeDashboard()),
+            );
+          }
         } else if (result is Customer) {
           // Customer dashboard
           Navigator.pushReplacement(
@@ -83,6 +92,14 @@ class SignInState extends State<SignIn> {
             child: Column(
               children: [
                 const SizedBox(height: 50),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Image.asset(
+                    'assets/images/welcome_illustration.png',
+                    height: 200, // Adjust height as needed
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Text(
                   "Sign In To PowerLink",
                   style: textTheme.headlineMedium?.copyWith(

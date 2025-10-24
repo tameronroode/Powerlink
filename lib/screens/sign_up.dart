@@ -78,10 +78,13 @@ class SignUpState extends State<SignUp> {
           child: Column(
             children: [
               const SizedBox(height: 50),
-              Image.network(
-                "https://img.freepik.com/free-vector/business-people-working-project-together_74855-6300.jpg",
-                height: 250,
-                fit: BoxFit.cover,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Image.asset(
+                  'assets/images/signup_illustration.png',
+                  height: 250,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
