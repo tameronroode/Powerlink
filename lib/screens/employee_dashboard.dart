@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:powerlink_crm/screens/voice_ai_screen.dart';
 import 'employee_profile.dart'; // Use consistent relative import
 import 'messages_employee.dart'; // Import the new messages screen
 import 'settings_screen.dart';
@@ -15,16 +16,16 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   int _selectedIndex = 0;
 
   // List of the main pages for the dashboard
-  // These widgets should not have their own Scaffolds
   static const List<Widget> _pages = <Widget>[
     _DashboardHomePage(), // The main dashboard view
     MessagesEmployeeScreen(),
-    Center(child: Text('Voice AI Screen - Coming Soon')), // Placeholder
+    VoiceAiScreen(), // Voice AI screen is now part of the main navigation
     Center(child: Text('Gamification Screen - Coming Soon')), // Placeholder
     SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
+    // The navigation is now handled entirely by the IndexedStack.
     setState(() {
       _selectedIndex = index;
     });
@@ -35,7 +36,6 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Employee Dashboard'),
-        // The leading back button is removed automatically when it's a top-level screen
         automaticallyImplyLeading: false,
       ),
       // Use IndexedStack to preserve the state of each page when switching
@@ -47,7 +47,6 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed, // To show all labels
-        // No hardcoded colors - will use the theme from main.dart
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),

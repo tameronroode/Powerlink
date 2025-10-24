@@ -35,6 +35,9 @@ dependencies:
   # For state management, used here for theme switching.
   provider: ^6.1.2
 
+  # For Current voice-to-text input functionality
+  avatar_glow: ^3.0.1 # Or latest version
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
