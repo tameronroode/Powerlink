@@ -37,46 +37,49 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
       appBar: AppBar(
         title: const Text('Appearance'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(top: 8.0),
-              children: [
-                _buildThemeOption(
-                  context,
-                  title: 'Light Mode',
-                  value: ThemeMode.light,
-                ),
-                _buildThemeOption(
-                  context,
-                  title: 'Dark Mode',
-                  value: ThemeMode.dark,
-                ),
-                _buildThemeOption(
-                  context,
-                  title: 'System Default',
-                  value: ThemeMode.system,
-                ),
-              ],
-            ),
-          ),
-          // Add the Apply button at the bottom
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _applyTheme,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                child: const Text('Apply Change'),
+      // Wrap the body with SafeArea to avoid system UI overlaps.
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(top: 8.0),
+                children: [
+                  _buildThemeOption(
+                    context,
+                    title: 'Light Mode',
+                    value: ThemeMode.light,
+                  ),
+                  _buildThemeOption(
+                    context,
+                    title: 'Dark Mode',
+                    value: ThemeMode.dark,
+                  ),
+                  _buildThemeOption(
+                    context,
+                    title: 'System Default',
+                    value: ThemeMode.system,
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            // Add the Apply button at the bottom
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _applyTheme,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  child: const Text('Apply Change'),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

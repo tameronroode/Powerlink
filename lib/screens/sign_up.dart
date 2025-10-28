@@ -13,6 +13,7 @@ class SignUpState extends State<SignUp> {
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController(); // Added phone controller
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
 
@@ -27,7 +28,7 @@ class SignUpState extends State<SignUp> {
         passwordController.text.isEmpty ||
         confirmController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields")),
+        const SnackBar(content: Text("Please fill in all required fields")),
       );
       return;
     }
@@ -49,6 +50,7 @@ class SignUpState extends State<SignUp> {
       lastName: lastNameController.text,
       email: emailController.text,
       password: passwordController.text,
+      phone: phoneController.text, // Passed phone number
     );
 
     setState(() {
@@ -141,6 +143,24 @@ class SignUpState extends State<SignUp> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Phone Number Field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: TextField(
+                  controller: phoneController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                    labelText: "Phone Number (Optional)",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  keyboardType: TextInputType.phone,
                 ),
               ),
               const SizedBox(height: 20),

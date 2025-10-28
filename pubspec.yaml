@@ -38,6 +38,9 @@ dependencies:
   # For Current voice-to-text input functionality
   avatar_glow: ^3.0.1 # Or latest version
 
+  # For launching URLs.
+  url_launcher: ^6.2.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

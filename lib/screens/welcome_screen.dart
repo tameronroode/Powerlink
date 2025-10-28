@@ -1,12 +1,26 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  // Function to launch the URL
+  Future<void> _launchURL(BuildContext context, String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      // Show a snackbar or log an error if the URL can't be launched
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch $url')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get theme data for styling that adapts to light/dark mode
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
 
     return Scaffold(
       body: SafeArea(
@@ -100,11 +114,28 @@ class WelcomeScreen extends StatelessWidget {
                       style: textTheme.bodySmall,
                     ),
                     const SizedBox(height: 5),
-                    Text(
-                      "Learn how we use your data in our Privacy Policy.",
+                    RichText(
                       textAlign: TextAlign.center,
-                      // This text will also adapt to the theme
-                      style: textTheme.bodySmall,
+                      text: TextSpan(
+                        style: textTheme.bodySmall,
+                        children: [
+                          const TextSpan(
+                              text: 'Learn how we use your data in our '),
+                          TextSpan(
+                            text: 'Privacy Policy.',
+                            style: TextStyle(
+                              color: theme.primaryColor,
+                              decoration: TextDecoration.underline,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                _launchURL(context,
+                                    'https://sapower.co.za/privacy-policy');
+                              },
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

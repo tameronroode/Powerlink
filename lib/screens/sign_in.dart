@@ -38,22 +38,25 @@ class SignInState extends State<SignIn> {
         if (result is Employee) {
           // Check for manager role and navigate accordingly
           if (result.role != null && result.role!.toLowerCase() == 'manager') {
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const ManagerDashboard()),
+              (Route<dynamic> route) => false, // Removes all previous routes
             );
           } else {
             // Employee dashboard
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => const EmployeeDashboard()),
+              (Route<dynamic> route) => false, // Removes all previous routes
             );
           }
         } else if (result is Customer) {
           // Customer dashboard
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const CustomerDashboard()),
+            (Route<dynamic> route) => false, // Removes all previous routes
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -196,17 +199,6 @@ class SignInState extends State<SignIn> {
                     );
                   },
                   child: const Text("Forgot Password"),
-                ),
-                // Add the guest login for easier testing
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CustomerDashboard()),
-                    );
-                  },
-                  child: const Text("Continue as Guest"),
                 ),
               ],
             ),
