@@ -85,6 +85,17 @@ class _HomePageState extends State<_HomePage> {
     return isDarkMode ? Colors.blueAccent : theme.primaryColor;
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_customerStream == null) {
@@ -147,6 +158,7 @@ class _HomePageState extends State<_HomePage> {
 
   Widget _buildHeader(BuildContext context, Color dynamicColor, String firstName) {
     final theme = Theme.of(context);
+    final greeting = _getGreeting();
 
     return Row(
       children: [
@@ -159,7 +171,7 @@ class _HomePageState extends State<_HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Good Morning, $firstName",
+              "$greeting, $firstName",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
