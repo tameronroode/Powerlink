@@ -49,5 +49,9 @@
 	<string>This app uses speech recognition to convert your speech into text.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs access to your microphone to record your speech for conversion to text.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to your photo gallery to let you choose a profile picture.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to your camera to let you take a new profile picture.</string>
 </dict>
 </plist>

@@ -30,7 +30,10 @@ dependencies:
   supabase_flutter: ^2.5.0
 
   # For picking images from the device's gallery or camera.
-  image_picker: ^1.0.4
+  image_picker: ^1.0.7
+
+  # Modern, popular, and stable image cropping plugin.
+  crop_image: ^1.0.16
 
   # For state management, used here for theme switching.
   provider: ^6.1.2
