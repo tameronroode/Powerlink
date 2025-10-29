@@ -124,17 +124,24 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     // Step 1: Upload the new avatar if one has been picked.
     if (_newAvatarBytes != null) {
       try {
-        final tempDir = await getTemporaryDirectory();
-        final file = await File('${tempDir.path}/profile_${DateTime.now().millisecondsSinceEpoch}.png').writeAsBytes(_newAvatarBytes!);
         const fileExt = 'png';
         final fileName = '${user.id}/profile.$fileExt';
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-        await supabaseClient.storage.from('avatars').upload(
+        // The Foolproof Method: Remove the old file first, then upload the new one.
+        // This avoids any issues with the `upsert` option.
+        // It's safe to call remove even if the file doesn't exist on first upload.
+        await supabaseClient.storage.from('avatars').remove([fileName]);
+
+        await supabaseClient.storage.from('avatars').uploadBinary(
               fileName,
-              file,
-              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+              _newAvatarBytes!,
+              fileOptions: const FileOptions(cacheControl: '3600'), // No upsert needed
             );
-        newImageUrl = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+
+        // Get the base URL and add a timestamp for cache busting
+        final baseUrl = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
+        newImageUrl = '$baseUrl?t=$timestamp';
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
