@@ -100,7 +100,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     });
   }
 
-  // This function now handles the upload AND saving other profile data
+  // This function handles the upload AND saving other profile data
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     if (!mounted) return;
@@ -127,9 +127,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
         final fileName = '${user.id}/profile.$fileExt';
         final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-        // The Foolproof Method: Remove the old file first, then upload the new one.
-        // This avoids any issues with the `upsert` option.
-        // It's safe to call remove even if the file doesn't exist on first upload.
+      
         await supabaseClient.storage.from('avatars').remove([fileName]);
 
         await supabaseClient.storage.from('avatars').uploadBinary(

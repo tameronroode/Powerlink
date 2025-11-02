@@ -1,141 +1,64 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:powerlink_crm/screens/add_customer_screen.dart';
-import 'package:powerlink_crm/screens/customer_dashboard.dart';
-import 'package:powerlink_crm/screens/help_chat_screen.dart';
-import 'package:powerlink_crm/screens/settings_screen.dart';
-import 'package:powerlink_crm/screens/sign_in.dart';
-import 'package:powerlink_crm/screens/sign_up.dart';
-import 'package:powerlink_crm/screens/splash_screen.dart';
-import 'package:powerlink_crm/screens/start_screen.dart';
-import 'package:powerlink_crm/screens/visits_screen.dart';
-import 'package:powerlink_crm/screens/welcome_screen.dart';
-import 'package:powerlink_crm/screens/manager_dashboard.dart';
-import 'package:powerlink_crm/services/theme_service.dart';
+// Screens
+import 'screens/start_screen.dart';
+import 'screens/sign_in.dart';
+import 'screens/sign_up.dart';
+import 'screens/load_screen.dart';
+import 'screens/employee_dashboard.dart';
+import 'screens/manager_dashboard.dart';
+import 'screens/manage_users_screen.dart';
+import 'screens/customer_dashboard.dart';
+import 'screens/add_customer_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Load .env
-  await dotenv.load(fileName: ".env");
-
-  // ✅ Initialize Supabase
+  // ✅ Initialize Supabase before runApp
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-  );
-
-  // ✅ Initialize SharedPreferences for theme service
-  final prefs = await SharedPreferences.getInstance();
-
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeService(prefs),
-      child: const PowerLinkCRM(),
+    url: const String.fromEnvironment(
+      'SB_URL',
+      defaultValue: 'https://pqtkuyspjbnijmcdnipf.supabase.co',
+    ),
+    anonKey: const String.fromEnvironment(
+      'SB_ANON',
+      defaultValue:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdGt1eXNwamJuaWptY2RuaXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NDE3MDAsImV4cCI6MjA3NjExNzcwMH0.7Vs_aPGCfkp26r_FHH4FJ7qL3WCZYQbEfhsBAD6K8uk',
     ),
   );
+
+  runApp(const App());
 }
 
-class PowerLinkCRM extends StatelessWidget {
-  const PowerLinkCRM({super.key});
+class App extends StatelessWidget {
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF182D53);
+    return MaterialApp(
+      title: 'PowerLink CRM',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF182D53),
+      ),
 
-    return Consumer<ThemeService>(
-      builder: (context, themeService, child) {
-        return MaterialApp(
-          title: 'PowerLink CRM',
-          debugShowCheckedModeBanner: false,
+      // Start app on StartScreen (splash → sign in)
+      initialRoute: '/start',
 
-          // Connect theme settings to the ThemeService
-          themeMode: themeService.themeMode,
-
-          // Define the light theme
-          theme: ThemeData(
-            brightness: Brightness.light,
-            primaryColor: primaryColor,
-            scaffoldBackgroundColor: Colors.grey[100],
-            cardColor: Colors.white,
-            textTheme: const TextTheme(
-              bodyMedium: TextStyle(color: Colors.black87),
-            ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: primaryColor,
-              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              iconTheme: IconThemeData(color: Colors.white),
-            ),
-            bottomNavigationBarTheme: BottomNavigationBarThemeData(
-              backgroundColor: Colors.white,
-              selectedItemColor: primaryColor,
-              unselectedItemColor: Colors.grey[600],
-            ),
-             outlinedButtonTheme: OutlinedButtonThemeData(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: primaryColor, 
-                side: const BorderSide(color: primaryColor, width: 2),
-              ),
-            ),
-             elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ),
-
-          // Define the dark theme
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            primaryColor: primaryColor,
-            scaffoldBackgroundColor: const Color(0xFF121212),
-            cardColor: const Color(0xFF1E1E1E),
-            textTheme: const TextTheme(
-              bodyMedium: TextStyle(color: Colors.white70),
-            ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: primaryColor,
-              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-              iconTheme: IconThemeData(color: Colors.white),
-            ),
-            bottomNavigationBarTheme: BottomNavigationBarThemeData(
-              backgroundColor: const Color(0xFF1E1E1E),
-              selectedItemColor: Colors.white,
-              unselectedItemColor: Colors.grey[400],
-            ),
-            outlinedButtonTheme: OutlinedButtonThemeData(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white, 
-                side: const BorderSide(color: Colors.white, width: 2),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ),
-
-          home: const SplashScreen(),
-          routes: {
-            '/start': (context) => const StartScreen(),
-            '/welcome': (context) => const WelcomeScreen(),
-            '/login': (context) => const SignIn(),
-            '/signup': (context) => const SignUp(),
-            '/customers': (context) => const CustomerDashboard(),
-            '/managerDashboard': (context) => const ManagerDashboard(),
-            '/addCustomer': (context) => const AddCustomerScreen(),
-            '/visits': (context) => const VisitsScreen(),
-            '/helpChat': (context) => const HelpChatScreen(),
-            '/settings': (context) => const SettingsScreen(),
-          },
-        );
+      // ✅ Register all routes
+      routes: {
+        '/start': (_) => const StartScreen(),
+        '/login': (_) => const SignIn(),
+        '/signup': (_) => const SignUp(),
+        '/load': (_) => const LoadScreen(),
+        '/employee_dashboard': (_) => const EmployeeDashboard(),
+        '/manager_dashboard': (_) => const ManagerDashboard(),
+        '/manage_users': (_) => const ManageUsersScreen(),
+        '/customers': (_) => const CustomerDashboard(),
+        '/add_customer': (_) => const AddCustomerScreen(),
       },
     );
   }

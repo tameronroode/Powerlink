@@ -1,64 +1,46 @@
 import 'package:flutter/material.dart';
 
-class StartScreen extends StatelessWidget {
+class StartScreen extends StatefulWidget {
   const StartScreen({super.key});
 
   @override
+  State<StartScreen> createState() => _StartScreenState();
+}
+
+class _StartScreenState extends State<StartScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Simulate short splash / startup delay before moving to sign in
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/app_logo.png',
-                height: 150,
+      backgroundColor: theme.colorScheme.primary,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.bolt, color: Colors.white, size: 80),
+            const SizedBox(height: 20),
+            Text(
+              'PowerLink CRM',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 40),
-              const Text(
-                "Welcome to PowerLink",
-                style: TextStyle(
-                  color: Color(0xFF2C426A),
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                "Boost your business connections effortlessly.",
-                style: TextStyle(
-                  color: Colors.black54,
-                  fontSize: 16,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 60),
-              ElevatedButton(
-                onPressed: () {
-                  // Navigate to the Welcome Screen using its named route for consistency.
-                  Navigator.pushNamed(context, '/welcome');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2C426A),
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: const Text(
-                  "Get Started",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(color: Colors.white),
+          ],
         ),
       ),
     );

@@ -1,3 +1,4 @@
+// lib/screens/voice_ai_screen.dart
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -6,17 +7,18 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:avatar_glow/avatar_glow.dart';
 
-class VoiceAiScreen extends StatefulWidget {
-  const VoiceAiScreen({super.key});
+class VoiceAIScreen extends StatefulWidget {
+  const VoiceAIScreen({super.key});
 
   @override
-  _VoiceAiScreenState createState() => _VoiceAiScreenState();
+  State<VoiceAIScreen> createState() => _VoiceAIScreenState();
 }
 
-class _VoiceAiScreenState extends State<VoiceAiScreen> {
+class _VoiceAIScreenState extends State<VoiceAIScreen> {
   // State variables for Speech-to-Text
-  final TextEditingController _textController =
-      TextEditingController(text: 'Press the button and start speaking');
+  final TextEditingController _textController = TextEditingController(
+    text: 'Press the button and start speaking',
+  );
   late stt.SpeechToText _speech;
   bool _isListening = false;
   double _confidence = 1.0;
@@ -42,19 +44,20 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use a Stack to layer the floating button on top of the scrollable content.
     return Stack(
       children: [
-        // Layer 1: The scrollable content
+        // Layer 1: Scrollable content
         SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section for Transcribed Text
+              // Transcribed Text
               Text(
                 "Transcribed Text",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -70,10 +73,12 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Section for Context
+              // Context
               Text(
                 "Context (Optional)",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -81,7 +86,8 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
                 maxLines: 3,
                 style: const TextStyle(fontSize: 16.0, color: Colors.black),
                 decoration: InputDecoration(
-                  hintText: 'e.g., "Summarize this for a sales meeting about project X"',
+                  hintText:
+                      'e.g., "Summarize this for a sales meeting about project X"',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
@@ -93,17 +99,20 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
               const Divider(),
               const SizedBox(height: 24),
 
-              // Section for AI Summary
+              // AI Summary
               Text(
                 "AI Summary",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               _buildSummaryWidget(),
             ],
           ),
         ),
-        // Layer 2: The floating microphone button with blur and gradient effect
+
+        // Layer 2: Mic button
         Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
@@ -118,23 +127,33 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
                   repeat: true,
                   child: FloatingActionButton(
                     onPressed: _listen,
-                    backgroundColor: Colors.transparent, // Button is transparent
+                    backgroundColor: Colors.transparent,
                     elevation: 0,
-                    child: Container( // This container provides the gradient background
+                    child: Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: _isListening
-                              ? [Colors.red.withOpacity(0.7), Colors.red.withOpacity(0.4)]
+                              ? [
+                                  Colors.red.withOpacity(0.7),
+                                  Colors.red.withOpacity(0.4),
+                                ]
                               : [
-                                  Theme.of(context).primaryColor.withOpacity(0.7),
-                                  Theme.of(context).primaryColor.withOpacity(0.4)
+                                  Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.7),
+                                  Theme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.4),
                                 ],
                           stops: const [0.7, 1.0],
                         ),
                       ),
                       child: Center(
-                        child: Icon(_isListening ? Icons.mic : Icons.mic_none, color: Colors.white),
+                        child: Icon(
+                          _isListening ? Icons.mic : Icons.mic_none,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -147,22 +166,17 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
     );
   }
 
-
-  /// Builds the widget to display the summary or a loading/error state.
   Widget _buildSummaryWidget() {
     if (_isSummarizing) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (_summary.isEmpty) {
       return const Text(
         'Summary will appear here after you stop speaking.',
         style: TextStyle(color: Colors.grey, fontSize: 16),
       );
     }
-
-    // Display the summary or an error message
-    bool isError = _summary.startsWith("Error:");
+    final isError = _summary.startsWith("Error:");
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -180,35 +194,32 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
     );
   }
 
-  /// Handles starting and stopping the speech recognition.
-  void _listen() async {
+  Future<void> _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => print('onStatus: $val'),
-        onError: (val) => print('onError: $val'),
+      final available = await _speech.initialize(
+        onStatus: (val) => debugPrint('onStatus: $val'),
+        onError: (val) => debugPrint('onError: $val'),
       );
-
       if (available) {
         if (_textController.text == 'Press the button and start speaking') {
           _textController.clear();
         }
         setState(() {
           _isListening = true;
-          _summary = ''; // Clear previous summary when starting
+          _summary = '';
         });
 
         _speech.listen(
           listenFor: const Duration(minutes: 30),
           pauseFor: const Duration(minutes: 5),
           onResult: (val) {
-            if (mounted) {
-              setState(() {
-                _textController.text = val.recognizedWords;
-                if (val.hasConfidenceRating && val.confidence > 0) {
-                  _confidence = val.confidence;
-                }
-              });
-            }
+            if (!mounted) return;
+            setState(() {
+              _textController.text = val.recognizedWords;
+              if (val.hasConfidenceRating && val.confidence > 0) {
+                _confidence = val.confidence;
+              }
+            });
           },
         );
       }
@@ -216,7 +227,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
       setState(() => _isListening = false);
       await _speech.stop();
       if (_textController.text.isNotEmpty) {
-        _summarizeText(
+        await _summarizeText(
           textToSummarize: _textController.text,
           context: _contextController.text,
         );
@@ -224,16 +235,15 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
     }
   }
 
-  /// Sends the transcribed text to the Hugging Face API for summarization.
-  Future<void> _summarizeText(
-      {required String textToSummarize, String? context}) async {
-    setState(() {
-      _isSummarizing = true;
-    });
+  Future<void> _summarizeText({
+    required String textToSummarize,
+    String? context,
+  }) async {
+    setState(() => _isSummarizing = true);
 
-    const String apiUrl =
+    const apiUrl =
         "https://api-inference.huggingface.co/models/facebook/bart-large-cnn";
-    final String? apiKey = dotenv.env['HUGGING_FACE_API_TOKEN'];
+    final apiKey = dotenv.env['HUGGING_FACE_API_TOKEN'];
 
     if (apiKey == null || apiKey.isEmpty) {
       setState(() {
@@ -244,7 +254,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
       return;
     }
 
-    String inputText = textToSummarize;
+    var inputText = textToSummarize;
     if (context != null && context.isNotEmpty) {
       inputText =
           "Context: $context. \n\nSummarize the following text: $textToSummarize";
@@ -259,10 +269,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
         },
         body: json.encode({
           "inputs": inputText,
-          "parameters": {
-            "min_length": 30,
-            "max_length": 150,
-          }
+          "parameters": {"min_length": 30, "max_length": 150},
         }),
       );
 
@@ -270,12 +277,12 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
         final List<dynamic> responseData = json.decode(response.body);
         if (responseData.isNotEmpty &&
             responseData[0].containsKey('summary_text')) {
-          setState(() {
-            _summary = responseData[0]['summary_text'];
-          });
+          setState(() => _summary = responseData[0]['summary_text']);
         } else {
           setState(
-              () => _summary = "Error: Received an invalid response from the API.");
+            () =>
+                _summary = "Error: Received an invalid response from the API.",
+          );
         }
       } else {
         setState(() {
@@ -289,9 +296,7 @@ class _VoiceAiScreenState extends State<VoiceAiScreen> {
             "Error: Could not connect to the Hugging Face API. Check your internet connection.\n$e";
       });
     } finally {
-      setState(() {
-        _isSummarizing = false;
-      });
+      setState(() => _isSummarizing = false);
     }
   }
 }

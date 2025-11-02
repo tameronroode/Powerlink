@@ -1,76 +1,126 @@
+// lib/screens/employee_dashboard.dart
 import 'package:flutter/material.dart';
-import 'package:powerlink_crm/screens/voice_ai_screen.dart';
-import 'employee_profile.dart'; // Use consistent relative import
-import 'messages_employee.dart'; // Import the new messages screen
-import 'settings_screen.dart';
 
-// Main stateful widget that acts as the navigation shell
+// 🔹 Local screen imports
+import 'gamification.dart';
+import 'messages_screen.dart';
+import 'voice_ai_screen.dart';
+import 'settings_screen.dart';
+import 'employee_profile.dart';
+// Home drill-ins:
+import 'tasks_screen.dart';
+import 'new_leads.dart';
+
+// 🔹 Data and models
+import '../data/supabase_service.dart' as svc; // ⬅️ alias the service
+import '../models/employee.dart';
+// import '../models/task.dart'; // ⬅️ optional: remove to avoid confusion
+
 class EmployeeDashboard extends StatefulWidget {
   const EmployeeDashboard({super.key});
 
   @override
-  _EmployeeDashboardState createState() => _EmployeeDashboardState();
+  State<EmployeeDashboard> createState() => _EmployeeDashboardState();
 }
 
 class _EmployeeDashboardState extends State<EmployeeDashboard> {
+  static const Color mainBlue = Color(0xFF182D53);
+
   int _selectedIndex = 0;
 
-  // List of the main pages for the dashboard
-  static const List<Widget> _pages = <Widget>[
-    _DashboardHomePage(), // The main dashboard view
-    MessagesEmployeeScreen(),
-    VoiceAiScreen(), // Voice AI screen is now part of the main navigation
-    Center(child: Text('Gamification Screen - Coming Soon')), // Placeholder
-    SettingsScreen(),
-  ];
+  bool loading = true;
+  String? error;
+  List<Employee> employees = [];
 
-  void _onItemTapped(int index) {
-    // The navigation is now handled entirely by the IndexedStack.
-    setState(() {
-      _selectedIndex = index;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
+
+  Future<void> _load() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final rows = await svc.SupabaseService.employees(); // 
+      employees = rows.map(Employee.fromRow).toList();
+    } catch (e) {
+      error = e.toString();
+    }
+    if (mounted) setState(() => loading = false);
+  }
+
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
   Widget build(BuildContext context) {
+    final pages = <Widget>[
+      _HomeOverview(
+        onOpenTasks: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TasksScreen()),
+        ),
+        onOpenLeads: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LeadsScreen()),
+        ),
+      ),
+      const EmployeeProfileScreen(),
+      const MessagesScreen(),
+      const VoiceAIScreen(),
+      const GamificationScreen(),
+      const SettingsScreen(),
+    ];
+
+    final titles = <String>[
+      'Employee Dashboard',
+      'Profile',
+      'Messages',
+      'Voice AI',
+      'Gamify',
+      'Settings',
+    ];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Employee Dashboard'),
-        automaticallyImplyLeading: false,
+        title: Text(titles[_selectedIndex]),
+        backgroundColor: mainBlue,
+        foregroundColor: Colors.white,
+        centerTitle: true,
       ),
-      // Use IndexedStack to preserve the state of each page when switching
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // To show all labels
+        backgroundColor: Colors.white,
+        selectedItemColor: mainBlue,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
             label: 'Home',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.message_outlined),
-            activeIcon: Icon(Icons.message),
             label: 'Messages',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.mic_none),
-            activeIcon: Icon(Icons.mic),
             label: 'Voice AI',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.games_outlined),
-            activeIcon: Icon(Icons.games),
+            icon: Icon(Icons.emoji_events_outlined),
             label: 'Gamify',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
@@ -79,175 +129,270 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   }
 }
 
-// The content for the "Home" tab of the dashboard
-class _DashboardHomePage extends StatelessWidget {
-  const _DashboardHomePage();
+class _HomeOverview extends StatefulWidget {
+  const _HomeOverview({required this.onOpenTasks, required this.onOpenLeads});
+  final VoidCallback onOpenTasks;
+  final VoidCallback onOpenLeads;
+
+  @override
+  State<_HomeOverview> createState() => _HomeOverviewState();
+}
+
+class _HomeOverviewState extends State<_HomeOverview> {
+  static const Color mainBlue = Color(0xFF182D53);
+
+  // ⬇️ Use the service Task type
+  late Future<List<svc.Task>> _tasksFuture;
+  late Future<List<Map<String, dynamic>>> _leadsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tasksFuture = svc.SupabaseService.myTasks(); // 
+    _leadsFuture = svc.SupabaseService.getLeads(); // 
+  }
+
+  Color _dynamicColor(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.brightness == Brightness.dark ? Colors.blueAccent : mainBlue;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final accent = _dynamicColor(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
+          _SectionHeader(
+            title: 'Assigned Tasks',
+            color: accent,
+            onSeeAll: widget.onOpenTasks,
+          ),
+          FutureBuilder<List<svc.Task>>(
+            
+            future: _tasksFuture,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const LinearProgressIndicator();
+              }
+              if (snap.hasError) {
+                return _InlineError(
+                  message: snap.error.toString(),
+                  onRetry: () => setState(
+                    () => _tasksFuture = svc.SupabaseService.myTasks(),
+                  ),
+                );
+              }
+              final items = snap.data ?? const <svc.Task>[];
+              if (items.isEmpty) {
+                return _EmptyCard(
+                  icon: Icons.checklist_outlined,
+                  text: 'No tasks assigned yet',
+                  onTap: widget.onOpenTasks,
+                );
+              }
+              final preview = items.take(3).toList();
+              return Column(
+                children: preview.map((t) {
+                  final due = t.dueDate != null
+                      ? ' • Due ${_fmtDate(t.dueDate!)}'
+                      : '';
+                  return ListTile(
+                    leading: Icon(Icons.checklist_outlined, color: accent),
+                    title: Text(t.title),
+                    subtitle: Text('${t.status}$due'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: widget.onOpenTasks,
+                  );
+                }).toList(),
+              );
+            },
+          ),
           const SizedBox(height: 20),
-          _buildSectionTitle(context, 'Assigned Tasks'),
-          _buildTaskList(),
+
+          _SectionHeader(
+            title: 'Customer Leads',
+            color: accent,
+            onSeeAll: widget.onOpenLeads,
+          ),
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: _leadsFuture,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const LinearProgressIndicator();
+              }
+              if (snap.hasError) {
+                return _InlineError(
+                  message: snap.error.toString(),
+                  onRetry: () => setState(
+                    () => _leadsFuture = svc.SupabaseService.getLeads(),
+                  ),
+                );
+              }
+              final items = snap.data ?? const <Map<String, dynamic>>[];
+              if (items.isEmpty) {
+                return _EmptyCard(
+                  icon: Icons.person_add_alt_1_outlined,
+                  text: 'No leads yet — tap to view/create',
+                  onTap: widget.onOpenLeads,
+                );
+              }
+              final preview = items.take(3).toList();
+              return Column(
+                children: preview.map((m) {
+                  final source =
+                      (m['source'] ?? m['lead_source'] ?? m['leadSource'])
+                          ?.toString();
+                  final leadStatus =
+                      (m['lead_status'] ?? m['leadStatus'] ?? m['status'])
+                          ?.toString();
+                  final created =
+                      m['date_created'] ?? m['created_at'] ?? m['dateCreated'];
+                  return ListTile(
+                    leading: Icon(
+                      Icons.person_add_alt_1_outlined,
+                      color: accent,
+                    ),
+                    title: Text(source ?? 'Lead'),
+                    subtitle: Text(
+                      '${leadStatus ?? 'New'} • ${_fmtDateDynamic(created)}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: widget.onOpenLeads,
+                  );
+                }).toList(),
+              );
+            },
+          ),
+
           const SizedBox(height: 20),
-          _buildSectionTitle(context, 'Customer Leads'),
-          _buildLeadsList(context),
-          const SizedBox(height: 20),
-          _buildSectionTitle(context, 'Recent Interactions'),
-          _buildInteractionsList(context),
+          _SectionHeader(title: 'Recent Interactions', color: accent),
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const ListTile(
+              leading: Icon(Icons.history),
+              title: Text(
+                'This area is ready for your call/email/meeting feed.',
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        // Make the avatar a button to navigate to the profile page
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const EmployeeProfile()),
-            );
-          },
-          child: const CircleAvatar(
-            radius: 30,
-            child: Icon(Icons.person, size: 30),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome, Alex',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: theme.primaryColor, // Apply consistent color
-              ),
-            ),
-            Text(
-              'Today: October 20, 2025',
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  static String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
+  static String _fmtDateDynamic(dynamic d) {
+    if (d == null) return '';
+    final dt = d is DateTime ? d : DateTime.tryParse(d.toString());
+    if (dt == null) return '';
+    return _fmtDate(dt);
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.color,
+    this.onSeeAll,
+  });
+
+  final String title;
+  final Color color;
+  final VoidCallback? onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).primaryColor,
-        ),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+          if (onSeeAll != null)
+            TextButton(
+              onPressed: onSeeAll,
+              child: const Text('See all'),
+            ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildTaskList() {
-    final tasks = [
-      {'title': 'Follow up with client #123', 'status': 'In Progress'},
-      {'title': 'Prepare proposal for new lead', 'status': 'Pending'},
-      {'title': 'Team meeting at 3 PM', 'status': 'Completed'},
-    ];
+class _InlineError extends StatelessWidget {
+  const _InlineError({
+    required this.message,
+    required this.onRetry,
+  });
 
-    return Column(
-      children: tasks.map((task) {
-        Color statusColor;
-        switch (task['status']) {
-          case 'Completed':
-            statusColor = Colors.green;
-            break;
-          case 'In Progress':
-            statusColor = Colors.orange;
-            break;
-          default:
-            statusColor = Colors.grey;
-        }
-        return Card(
-          elevation: 2,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: ListTile(
-            title: Text(task['title']!),
-            trailing: Text(
-              task['status']!,
-              style: TextStyle(color: statusColor, fontWeight: FontWeight.w500),
-            ),
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final errorColor = Theme.of(context).colorScheme.error;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Error: $message',
+            style: TextStyle(color: errorColor),
           ),
-        );
-      }).toList(),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildLeadsList(BuildContext context) {
-    final leads = [
-      {'name': 'John Smith', 'source': 'Website Form', 'status': 'New'},
-      {'name': 'Jane Doe', 'source': 'Referral', 'status': 'Contacted'},
-    ];
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard({
+    required this.icon,
+    required this.text,
+    required this.onTap,
+  });
 
-    return Column(
-      children: leads.map((lead) {
-        return Card(
-          elevation: 2,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: ListTile(
-            leading: Icon(Icons.person, color: Theme.of(context).primaryColor),
-            title: Text(lead['name']!),
-            subtitle: Text('Source: ${lead['source']}'),
-            trailing: Text(lead['status']!, style: const TextStyle(fontWeight: FontWeight.w500)),
-          ),
-        );
-      }).toList(),
-    );
-  }
+  final IconData icon;
+  final String text;
+  final VoidCallback onTap;
 
-  Widget _buildInteractionsList(BuildContext context) {
-    final interactions = [
-      {'type': 'Call', 'with': 'John Smith', 'time': '10:00 AM'},
-      {'type': 'Email', 'with': 'Jane Doe', 'time': 'Yesterday'},
-      {'type': 'Meeting', 'with': 'Team', 'time': 'Tomorrow 3 PM'},
-    ];
-
-    return Column(
-      children: interactions.map((i) {
-        IconData icon;
-        switch (i['type']) {
-          case 'Call':
-            icon = Icons.phone;
-            break;
-          case 'Email':
-            icon = Icons.email;
-            break;
-          default:
-            icon = Icons.people;
-        }
-        return Card(
-          elevation: 2,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: ListTile(
-            leading: Icon(icon, color: Theme.of(context).primaryColor),
-            title: Text('${i['type']} with ${i['with']}'),
-            subtitle: Text('Time: ${i['time']}'),
-          ),
-        );
-      }).toList(),
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: accent),
+        title: Text(text),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
     );
   }
 }

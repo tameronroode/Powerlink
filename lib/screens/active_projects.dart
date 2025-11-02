@@ -1,38 +1,73 @@
 import 'package:flutter/material.dart';
+import '../data/supabase_service.dart';
+import 'project_create_screen.dart';
 
-class ActiveProjectsScreen extends StatelessWidget {
+class ActiveProjectsScreen extends StatefulWidget {
   const ActiveProjectsScreen({super.key});
+  @override
+  State<ActiveProjectsScreen> createState() => _ActiveProjectsScreenState();
+}
 
-  static const Color mainBlue = Color(0xFF182D53);
+class _ActiveProjectsScreenState extends State<ActiveProjectsScreen> {
+  static const Color mainBlue = Color.fromARGB(255, 12, 28, 58);
+
+  bool _loading = true;
+  String? _error;
+
+  List<_Person> _managers = [];
+  List<_Person> _employees = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final mRows = await SupabaseService.activeProjectsManagers();
+      final eRows = await SupabaseService.activeProjectsEmployees();
+
+      _managers = mRows
+          .map(
+            (r) => _Person(
+              (r['display_name'] ?? r['email'] ?? 'Unknown').toString(),
+              ((r['count'] as num?) ?? 0).toInt(),
+            ),
+          )
+          .toList();
+
+      _employees = eRows
+          .map(
+            (r) => _Person(
+              (r['display_name'] ?? r['email'] ?? 'Unknown').toString(),
+              ((r['count'] as num?) ?? 0).toInt(),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      _error = e.toString();
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  int get _totalActive =>
+      _managers.fold<int>(0, (s, p) => s + p.count) +
+      _employees.fold<int>(0, (s, p) => s + p.count);
 
   @override
   Widget build(BuildContext context) {
-    // Mock data
-    final managers = [
-      _Person('Ava Williams', 8),
-      _Person('Noah Patel', 2),
-      _Person('Liam Chen', 5),
-      _Person('Sofia Gomez', 0),
-    ];
-    final employees = [
-      _Person('Jane Doe', 3),
-      _Person('John Smith', 1),
-      _Person('Maya Singh', 6),
-      _Person('Oliver Jones', 0),
-      _Person('Ethan Brown', 2),
-    ];
-    final totalActive =
-        managers.fold<int>(0, (s, p) => s + p.count) +
-        employees.fold<int>(0, (s, p) => s + p.count);
-
     return DefaultTabController(
-      // <-- provides a TabController
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Active Projects'),
-          backgroundColor: mainBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: const Color.fromARGB(255, 2, 18, 50),
+          foregroundColor: const Color.fromARGB(255, 255, 255, 255),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Managers'),
@@ -41,53 +76,94 @@ class ActiveProjectsScreen extends StatelessWidget {
             indicatorColor: Colors.white,
           ),
         ),
-        body: Column(
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(child: Text(_error!))
+            : RefreshIndicator(
+                onRefresh: _load,
+                child: Column(
+                  children: [
+                    // KPIs
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          _kpi(
+                            Icons.folder_open,
+                            'Total Active',
+                            '$_totalActive',
+                          ),
+                          _kpi(
+                            Icons.supervisor_account_outlined,
+                            'Managers',
+                            '${_managers.length}',
+                          ),
+                          _kpi(
+                            Icons.badge_outlined,
+                            'Employees',
+                            '${_employees.length}',
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Tabs
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _PeopleList(
+                            people: _managers,
+                            emptyText: 'No manager activity.',
+                          ),
+                          _PeopleList(
+                            people: _employees,
+                            emptyText: 'No employee activity.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        // Two FABs: New Project + Refresh
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // KPIs
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _kpi(Icons.folder_open, 'Total Active', '$totalActive'),
-                  _kpi(
-                    Icons.supervisor_account_outlined,
-                    'Managers',
-                    '${managers.length}',
+            FloatingActionButton.extended(
+              heroTag: 'fab-new',
+              onPressed: () async {
+                final created = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ProjectCreateScreen(),
                   ),
-                  _kpi(
-                    Icons.badge_outlined,
-                    'Employees',
-                    '${employees.length}',
-                  ),
-                ],
-              ),
+                );
+                if (created != null) {
+                  _load();
+                }
+              },
+              backgroundColor: const Color.fromARGB(255, 239, 240, 240),
+              icon: const Icon(Icons.add),
+              label: const Text('New Project'),
             ),
-
-            // Tab content must be constrained -> Expanded fixes the overflow
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _PeopleList(people: managers, emptyText: 'No managers.'),
-                  _PeopleList(people: employees, emptyText: 'No employees.'),
-                ],
-              ),
+            const SizedBox(height: 10),
+            FloatingActionButton.extended(
+              heroTag: 'fab-refresh',
+              onPressed: _load,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color.fromARGB(255, 14, 20, 56),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
             ),
           ],
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {},
-          backgroundColor: mainBlue,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Refresh'),
         ),
       ),
     );
   }
 
-  // Small UI helpers
-
+  // KPI chip
   static Widget _kpi(IconData icon, String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -185,7 +261,7 @@ class _PeopleListState extends State<_PeopleList> {
                   ),
                 ),
                 onTap: () {
-                  // TODO: push to detail list for this person
+                  // (Optional) Navigate to a detail list of this person's projects
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text('Open ${p.name}')));
@@ -264,5 +340,3 @@ class _Person {
 }
 
 enum _Sort { mostActive, aToZ, zToA }
-
-

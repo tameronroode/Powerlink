@@ -1,222 +1,153 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:powerlink_crm/models/customer.dart';
-import 'package:powerlink_crm/models/employee.dart';
+import '../models/customer.dart';
+import '../models/employee.dart';
+import '../models/manager.dart';
 
 class AuthService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  AuthService._();
+  static final AuthService _i = AuthService._();
+  factory AuthService() => _i;
 
-  // -----------------------------------------------------
-  // Quick health check to confirm Supabase connectivity
-  // -----------------------------------------------------
-  Future<bool> testConnection() async {
-    try {
-      final result = await _supabase.from('customers').select('id').limit(1);
-      print('✅ Supabase database connection OK');
-      return true;
-    } on PostgrestException catch (e) {
-      print('❌ Database connection failed: ${e.message}');
-      return false;
-    } catch (e) {
-      print('❌ Could not reach Supabase: $e');
-      return false;
-    }
-  }
+  SupabaseClient get _supa => Supabase.instance.client;
 
-  // -------------------------------
-  // Sign up a new customer
-  // -------------------------------
+  // ---------------------------
+  // Public Sign Up Entrypoints
+  // ---------------------------
+
   Future<Customer?> signUpCustomer({
     required String firstName,
     required String lastName,
     required String email,
     required String password,
     String? phone,
-    String? address,
-    String? customerType,
   }) async {
-    try {
-      if (!await testConnection()) {
-        print('⚠️ Signup aborted: no Supabase connection.');
-        return null;
-      }
-
-      final AuthResponse res = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
-
-      if (res.user == null) {
-        print('⚠️ Supabase signup returned null user for $email');
-        return null;
-      }
-
-      final data = await _supabase.from('customers').insert({
-        'user_id': res.user!.id,
+    return _signUpAndInsert<Customer>(
+      email: email,
+      password: password,
+      role: 'Customer',
+      table: 'customers',
+      rowBuilder: (uid, emailL) => {
+        // if you have this column; otherwise remove this line:
+        'auth_user_id': uid,
         'first_name': firstName,
         'last_name': lastName,
-        'email': email,
-        'phone': phone,
-        'address': address,
-        'customer_type': customerType,
-      }).select();
-
-      if (data.isEmpty) {
-        print('⚠️ Failed to insert customer profile for $email');
-        return null;
-      }
-
-      print('✅ Customer registered: ${res.user!.email}');
-      return Customer.fromJson(data.first);
-    } on AuthException catch (e) {
-      print('❌ Supabase Auth signup error: ${e.message}');
-      return null;
-    } on PostgrestException catch (e) {
-      print('❌ Database insert error: ${e.message}');
-      return null;
-    } catch (e) {
-      print('❌ Unexpected signup error: $e');
-      return null;
-    }
+        'email': emailL, // lowercase
+        'phone': phone ?? '',
+        'role': 'Customer',
+      },
+      fromJson: Customer.fromJson,
+      onConflictColumn: 'email', // lowercase, matches UNIQUE on email
+    );
   }
 
-  // -------------------------------
-  // Sign in an employee or customer
-  // -------------------------------
-  Future<dynamic> signIn(String email, String password) async {
-    try {
-      if (!await testConnection()) {
-        print('⚠️ Sign-in aborted: no Supabase connection.');
-        return null;
-      }
-
-      final AuthResponse res = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-
-      if (res.user == null) {
-        print('❌ Supabase Auth sign-in failed: invalid credentials');
-        return null;
-      }
-
-      final userId = res.user!.id;
-
-      // Check employees table
-      final emp = await _supabase
-          .from('employees')
-          .select('id, user_id, first_name, last_name, email, role')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (emp != null) {
-        print('✅ Employee signed in: ${res.user!.email}');
-        return Employee.fromJson(emp);
-      }
-
-      // Check customers table
-      final cust = await _supabase
-          .from('customers')
-          .select('id, user_id, first_name, last_name, email, phone, customer_type')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-      if (cust != null) {
-        print('✅ Customer signed in: ${res.user!.email}');
-        return Customer.fromJson(cust);
-      }
-
-      // If no profile exists, create a minimal customer row
-      final inserted = await _supabase.from('customers').insert({
-        'user_id': userId,
-        'email': email,
-      }).select();
-
-      if (inserted.isNotEmpty) {
-        print('⚠️ No profile found — created minimal customer row for $email');
-        return Customer.fromJson(inserted.first);
-      }
-
-      return null;
-    } on AuthException catch (e) {
-      print('❌ Supabase Auth sign-in error: ${e.message}');
-      return null;
-    } on PostgrestException catch (e) {
-      print('❌ Database sign-in error: ${e.message}');
-      return null;
-    } catch (e) {
-      print('❌ Unexpected sign-in error: $e');
-      return null;
-    }
-  }
-
-  // -------------------------------
-  // Create a new employee profile
-  // -------------------------------
-  Future<Employee?> createEmployeeAccount({
+  Future<Employee?> signUpEmployee({
     required String firstName,
     required String lastName,
     required String email,
     required String password,
-    String? phoneNumber,
-    String? role,
-    DateTime? hireDate,
+    String role = 'Employee',
+    String? phone,
   }) async {
-    try {
-      if (!await testConnection()) {
-        print('⚠️ Employee creation aborted: no Supabase connection.');
-        return null;
-      }
-
-      final AuthResponse res = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
-
-      if (res.user == null) {
-        print('⚠️ Failed to create auth user for $email');
-        return null;
-      }
-
-      final data = await _supabase.from('employees').insert({
-        'user_id': res.user!.id,
+    return _signUpAndInsert<Employee>(
+      email: email,
+      password: password,
+      role: role, // 'Employee' or 'Manager'
+      table: 'employees',
+      rowBuilder: (uid, emailL) => {
+        'auth_user_id': uid,
         'first_name': firstName,
         'last_name': lastName,
-        'email': email,
-        'phone_number': phoneNumber,
+        'email': emailL,
+        'phone': phone ?? '',
         'role': role,
-        'hire_date': hireDate?.toIso8601String(),
-      }).select();
-
-      if (data.isEmpty) {
-        print('⚠️ Failed to insert employee profile for $email');
-        return null;
-      }
-
-      print('✅ Employee account created for $email');
-      return Employee.fromJson(data.first);
-    } on AuthException catch (e) {
-      print('❌ Supabase Auth employee creation error: ${e.message}');
-      return null;
-    } on PostgrestException catch (e) {
-      print('❌ Database employee insert error: ${e.message}');
-      return null;
-    } catch (e) {
-      print('❌ Unexpected employee creation error: $e');
-      return null;
-    }
+      },
+      fromJson: Employee.fromJson,
+      onConflictColumn: 'email',
+    );
   }
 
-  // -------------------------------
-  // Sign out the current user
-  // -------------------------------
-  Future<void> signOut() async {
-    try {
-      await _supabase.auth.signOut();
-      print('✅ User signed out successfully.');
-    } on AuthException catch (e) {
-      print('❌ Supabase sign-out error: ${e.message}');
-    } catch (e) {
-      print('❌ Unexpected sign-out error: $e');
-    }
+  Future<Manager?> signUpManager({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String password,
+    String? phone,
+    String department = '',
+  }) async {
+    return _signUpAndInsert<Manager>(
+      email: email,
+      password: password,
+      role: 'Manager',
+      table: 'managers',
+      rowBuilder: (uid, emailL) => {
+        'auth_user_id': uid,
+        'first_name': firstName,
+        'last_name': lastName,
+        'email': emailL,
+        'phone': phone ?? '',
+        'department': department,
+        'role': 'Manager',
+      },
+      fromJson: Manager.fromJson,
+      onConflictColumn: 'email',
+    );
+  }
+
+  // ---------------------------
+  // Sign In / Out
+  // ---------------------------
+
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) {
+    return _supa.auth.signInWithPassword(
+      email: email.trim().toLowerCase(), // normalize
+      password: password,
+    );
+  }
+
+  Future<void> signOut() => _supa.auth.signOut();
+
+  // ---------------------------
+  // Helper
+  // ---------------------------
+
+  Future<T?> _signUpAndInsert<T>({
+    required String email,
+    required String password,
+    required String role,
+    required String table,
+    required Map<String, dynamic> Function(
+      String? authUserId,
+      String emailLower,
+    )
+    rowBuilder,
+    required T Function(Map<String, dynamic>) fromJson,
+    required String onConflictColumn, // must match a UNIQUE/PK column
+  }) async {
+    final emailLower = email.trim().toLowerCase();
+
+    // 1) Create auth user with metadata
+    final authRes = await _supa.auth.signUp(
+      email: emailLower,
+      password: password,
+      data: {'role': role, 'email': emailLower},
+    );
+
+    final uid = authRes.user?.id; // can be null if email confirmation is on
+
+    // 2) Upsert profile row
+    final payload = rowBuilder(uid, emailLower);
+
+    final inserted = await _supa
+        .from(table)
+        .upsert(payload, onConflict: onConflictColumn)
+        .select()
+        .limit(1);
+
+    if (inserted.isEmpty) return null;
+
+    return fromJson(inserted.first);
   }
 }

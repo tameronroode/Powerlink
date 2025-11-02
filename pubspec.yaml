@@ -11,7 +11,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Standard iOS-style icons.
+  intl: ^0.19.0
+  
+
+# Standard iOS-style icons.
   cupertino_icons: ^1.0.8
   
   # For potential voice-to-text input functionality in the future.
@@ -27,7 +30,7 @@ dependencies:
   shared_preferences: ^2.5.3
   
   # The official Flutter client for Supabase (handles auth and database access).
-  supabase_flutter: ^2.5.0
+  supabase_flutter: ^2.10.3
 
   # For picking images from the device's gallery or camera.
   image_picker: ^1.0.7

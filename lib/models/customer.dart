@@ -1,53 +1,73 @@
+// lib/models/customer.dart
 class Customer {
-  final String customerId;
-  final String? userId; // <- nullable
+  final String id;
   final String firstName;
   final String lastName;
   final String email;
-  final String? phone;
-  final String? address;
-  final String? customerType;
-  final DateTime dateCreated;
 
-  Customer({
-    required this.customerId,
-    this.userId,
+  const Customer({
+    required this.id,
     required this.firstName,
     required this.lastName,
     required this.email,
-    this.phone,
-    this.address,
-    this.customerType,
-    required this.dateCreated,
   });
 
- factory Customer.fromJson(Map<String, dynamic> json) {
-  return Customer(
-    customerId: json['id']?.toString() ?? '',
-    userId: json['user_id']?.toString(),
-    firstName: json['first_name'] ?? '',
-    lastName: json['last_name'] ?? '',
-    email: json['email'] ?? '',
-    phone: json['phone'] as String?,
-    address: json['address'] as String?,
-    customerType: json['customer_type'] as String?,
-    dateCreated: json['date_created'] != null
-        ? DateTime.parse(json['date_created'])
-        : DateTime.now(),
-  );
-}
+  String get name =>
+      [firstName, lastName].where((s) => s.trim().isNotEmpty).join(' ').trim();
 
-  Map<String, dynamic> toMap() {
-    return {
-      'customer_id': customerId,
-      'user_id': userId,
-      'first_name': firstName,
-      'last_name': lastName,
-      'email': email,
-      'phone': phone,
-      'address': address,
-      'customer_type': customerType,
-      'date_created': dateCreated.toIso8601String(),
-    };
+  /// Preferred constructor used everywhere
+  factory Customer.fromJson(Map<String, dynamic> json) =>
+      Customer._fromAny(json);
+
+  /// Back-compat: some parts of app call fromRow
+  factory Customer.fromRow(Map<String, dynamic> row) => Customer._fromAny(row);
+
+  /// Unified parser that tolerates different casings/keys.
+  factory Customer._fromAny(Map<String, dynamic> map) {
+    String pickString(List<String> keys, {String fallback = ''}) {
+      for (final k in keys) {
+        final v = map[k];
+        if (v != null) return v.toString();
+      }
+      return fallback;
+    }
+
+    // id may be bigint/int/string and key may vary
+    dynamic rawId =
+        map['id'] ??
+        map['Id'] ??
+        map['ID'] ??
+        map['customer_id'] ??
+        map['CustomerId'] ??
+        map['CustomerID'];
+    final id = rawId == null ? '' : rawId.toString();
+
+    final first = pickString(['FirstName', 'first_name', 'firstName']);
+    final last = pickString(['LastName', 'last_name', 'lastName']);
+    final mail = pickString(['Email', 'email']);
+
+    return Customer(id: id, firstName: first, lastName: last, email: mail);
+  }
+
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'Id': id, // keep if your table stores/returns Id; safe to include as string
+    'FirstName': firstName,
+    'LastName': lastName,
+    'Email': email.toLowerCase(),
+  };
+
+  Customer copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    String? email,
+  }) {
+    return Customer(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+    );
   }
 }

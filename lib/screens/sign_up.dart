@@ -10,73 +10,148 @@ class SignUp extends StatefulWidget {
 }
 
 class SignUpState extends State<SignUp> {
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController(); // Added phone controller
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
+  final departmentController = TextEditingController(); // only for Manager
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
 
-  void signUp() async {
-    if (firstNameController.text.isEmpty ||
-        lastNameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        confirmController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all required fields")),
-      );
-      return;
+  final List<String> _roles = const ['Customer', 'Employee', 'Manager'];
+  String _selectedRole = 'Customer';
+
+  @override
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    confirmController.dispose();
+    departmentController.dispose();
+    super.dispose();
+  }
+
+  String? _required(String? v, {String label = 'This field'}) {
+    if (v == null || v.trim().isEmpty) return '$label is required';
+    return null;
+  }
+
+  String? _validateEmail(String? v) {
+    final value = v?.trim() ?? '';
+    if (value.isEmpty) return 'Email is required';
+    final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value);
+    return ok ? null : 'Enter a valid email';
+  }
+
+  String? _validatePassword(String? v) {
+    if ((v ?? '').length < 6) return 'Password must be at least 6 characters';
+    return null;
+  }
+
+  String? _validateConfirm(String? v) {
+    if (v != passwordController.text) return 'Passwords do not match';
+    return null;
+  }
+
+  Future<void> _signUp() async {
+    final form = _formKey.currentState;
+    if (form == null) return;
+    if (!form.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    final auth = AuthService();
+    dynamic result;
+
+    try {
+      final emailLower = emailController.text.trim().toLowerCase();
+
+      if (_selectedRole == 'Customer') {
+        result = await auth.signUpCustomer(
+          firstName: firstNameController.text.trim(), 
+          lastName: lastNameController.text.trim(), 
+          email: emailLower, 
+          password: passwordController.text,
+          phone: phoneController.text.trim(),
+        );
+      } else if (_selectedRole == 'Employee') {
+        result = await auth.signUpEmployee(
+          firstName: firstNameController.text.trim(),
+          lastName: lastNameController.text.trim(),
+          email: emailLower,
+          password: passwordController.text,
+          phone: phoneController.text.trim(),
+          role: 'Employee', // keep title-case string to mirror DB Role
+        );
+      } else {
+        // Manager
+        result = await auth.signUpManager(
+          firstName: firstNameController.text.trim(),
+          lastName: lastNameController.text.trim(),
+          email: emailLower,
+          password: passwordController.text,
+          phone: phoneController.text.trim(),
+          department: departmentController.text.trim(),
+        );
+      }
+    } catch (e) {
+      result = null;
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
 
-    if (passwordController.text != confirmController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
-      return;
-    }
+    if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    final authService = AuthService();
-    final customer = await authService.signUpCustomer(
-      firstName: firstNameController.text,
-      lastName: lastNameController.text,
-      email: emailController.text,
-      password: passwordController.text,
-      phone: phoneController.text, // Passed phone number
-    );
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (customer != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sign up successful! Please sign in.")),
-      );
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const SignIn()),
-      );
+    if (result != null) {
+      // Success → route by role
+      switch (_selectedRole) {
+        case 'Customer':
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/customers', (r) => false);
+          break;
+        case 'Employee':
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/employee_dashboard', (r) => false);
+          break;
+        case 'Manager':
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/manager_dashboard', (r) => false);
+          break;
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Sign up failed. The email may already be in use.")),
+          content: Text('Sign up failed. The email may already be in use.'),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const primaryCol = Color(0xFF182D53);
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 32),
           child: Column(
             children: [
               const SizedBox(height: 50),
@@ -89,153 +164,199 @@ class SignUpState extends State<SignUp> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 "Create Your Account",
-                style: TextStyle(
-                  color: Color(0xFF182D53),
-                  fontSize: 26,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: primaryCol,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
 
-              // First Name Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: firstNameController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.person_outline),
-                    labelText: "First Name",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Last Name Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: lastNameController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.person_outline),
-                    labelText: "Last Name",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Email Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    labelText: "Email Address",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Phone Number Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: phoneController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.phone_outlined),
-                    labelText: "Phone Number (Optional)",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Password Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    labelText: "Password",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Confirm Password
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: TextField(
-                  controller: confirmController,
-                  obscureText: _obscureConfirm,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    labelText: "Confirm Password",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureConfirm
-                          ? Icons.visibility
-                          : Icons.visibility_off),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirm = !_obscureConfirm;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: signUp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2C426A),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 60, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30)),
-                      ),
-                      child: const Text(
-                        "Sign Up",
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+              // FORM
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _pad(
+                      TextFormField(
+                        controller: firstNameController,
+                        decoration: _decoration(
+                          'First Name',
+                          Icons.person_outline,
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (v) => _required(v, label: 'First name'),
                       ),
                     ),
-              const SizedBox(height: 25),
+                    const SizedBox(height: 16),
+
+                    _pad(
+                      TextFormField(
+                        controller: lastNameController,
+                        decoration: _decoration(
+                          'Last Name',
+                          Icons.person_outline,
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (v) => _required(v, label: 'Last name'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _pad(
+                      TextFormField(
+                        controller: emailController,
+                        decoration: _decoration(
+                          'Email Address',
+                          Icons.email_outlined,
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        validator: _validateEmail,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _pad(
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: _decoration(
+                          'Phone Number (Optional)',
+                          Icons.phone_outlined,
+                        ),
+                        keyboardType: TextInputType.phone,
+                        textInputAction: TextInputAction.next,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _pad(
+                      TextFormField(
+                        controller: passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: _decoration('Password', Icons.lock_outline)
+                            .copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
+                            ),
+                        textInputAction: TextInputAction.next,
+                        validator: _validatePassword,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _pad(
+                      TextFormField(
+                        controller: confirmController,
+                        obscureText: _obscureConfirm,
+                        decoration:
+                            _decoration(
+                              'Confirm Password',
+                              Icons.lock_outline,
+                            ).copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirm
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscureConfirm = !_obscureConfirm,
+                                ),
+                              ),
+                            ),
+                        textInputAction: TextInputAction.done,
+                        validator: _validateConfirm,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Role dropdown
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Select Role',
+                          prefixIcon: const Icon(Icons.badge_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedRole,
+                            isExpanded: true,
+                            items: _roles
+                                .map(
+                                  (r) => DropdownMenuItem(
+                                    value: r,
+                                    child: Text(r),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) =>
+                                setState(() => _selectedRole = v ?? 'Customer'),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Department (only if Manager)
+                    if (_selectedRole == 'Manager')
+                      _pad(
+                        TextFormField(
+                          controller: departmentController,
+                          decoration: _decoration(
+                            'Department (Optional)',
+                            Icons.apartment_outlined,
+                          ),
+                          textInputAction: TextInputAction.done,
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    _isLoading
+                        ? const CircularProgressIndicator()
+                        : ElevatedButton(
+                            onPressed: _signUp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2C426A),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 60,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               GestureDetector(
                 onTap: () {
@@ -259,11 +380,21 @@ class SignUpState extends State<SignUp> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
             ],
           ),
         ),
       ),
     );
   }
+
+  InputDecoration _decoration(String label, IconData icon) => InputDecoration(
+    prefixIcon: Icon(icon),
+    labelText: label,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+  );
+
+  Padding _pad(Widget child) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 24),
+    child: child,
+  );
 }

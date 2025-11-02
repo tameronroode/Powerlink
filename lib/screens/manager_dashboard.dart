@@ -1,14 +1,21 @@
+// lib/screens/manager_dashboard.dart
 import 'package:flutter/material.dart';
+
+// Tabs / screens
 import 'manager_profile_screen.dart';
-import 'manager_messages_screen.dart';
 import 'manage_users_screen.dart';
 import 'customer_requests_screen.dart';
+import 'messages_screen.dart';
 
-// KPI target screens (file-name imports)
+// KPI drill-ins
 import 'active_projects.dart';
 import 'team_performance.dart';
 import 'customer_satisfaction.dart';
 import 'new_leads.dart';
+import 'meetings_screen.dart';
+
+// Data
+import '../data/supabase_service.dart' as svc;
 
 class ManagerDashboard extends StatefulWidget {
   const ManagerDashboard({super.key});
@@ -23,9 +30,9 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
 
   final List<Widget> _pages = const [
     _ManagerHomePage(),
-    ManagerMessagesScreen(),
+    MessagesScreen(),
     ManageUsersScreen(),
-    CustomerRequestsScreen(),
+    CustomerRequestScreen(),
     ManagerProfileScreen(),
   ];
 
@@ -69,19 +76,17 @@ class _ManagerDashboardState extends State<ManagerDashboard> {
   }
 }
 
-// ------------------------ MANAGER HOME PAGE (Private Widget) ------------------------
+// -----------------------------------------------------------------------------
+// Manager Home (uniform KPI cards + recent activity)
+// -----------------------------------------------------------------------------
 class _ManagerHomePage extends StatelessWidget {
   const _ManagerHomePage();
   static const Color mainBlue = Color(0xFF182D53);
 
   @override
   Widget build(BuildContext context) {
-    final kpiData = {
-      'active_projects': '12',
-      'customer_satisfaction': '92%',
-      'team_performance': 'Excellent',
-      'new_leads': '8',
-    };
+    const fallbackActiveProjects = '12';
+    const fallbackTeamPerf = 'Excellent';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -98,19 +103,27 @@ class _ManagerHomePage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // KPI grid (tappable cards)
+          // KPI grid — medium, uniform sizing
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
+            childAspectRatio: 1.25, // helps keep a consistent visual shape
             children: [
               _buildKpiCard(
                 context,
                 title: 'Active Projects',
-                value: kpiData['active_projects']!,
                 icon: Icons.folder,
+                valueWidget: const Text(
+                  fallbackActiveProjects,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: mainBlue,
+                  ),
+                ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const ActiveProjectsScreen(),
@@ -120,8 +133,8 @@ class _ManagerHomePage extends StatelessWidget {
               _buildKpiCard(
                 context,
                 title: 'Customer Satisfaction',
-                value: kpiData['customer_satisfaction']!,
                 icon: Icons.sentiment_satisfied,
+                valueWidget: const _CustomerSatisfactionValue(),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const CustomerSatisfactionScreen(),
@@ -131,8 +144,15 @@ class _ManagerHomePage extends StatelessWidget {
               _buildKpiCard(
                 context,
                 title: 'Team Performance',
-                value: kpiData['team_performance']!,
                 icon: Icons.star,
+                valueWidget: const Text(
+                  fallbackTeamPerf,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: mainBlue,
+                  ),
+                ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const TeamPerformanceScreen(),
@@ -141,11 +161,27 @@ class _ManagerHomePage extends StatelessWidget {
               ),
               _buildKpiCard(
                 context,
-                title: 'New Leads This Week',
-                value: kpiData['new_leads']!,
+                title: 'New Leads',
                 icon: Icons.show_chart,
+                valueWidget: const _LeadsCountValue(),
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LeadsScreen())),
+              ),
+              _buildKpiCard(
+                context,
+                title: 'Meetings',
+                icon: Icons.event_note,
+                valueWidget: const Text(
+                  'Plan & Log',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: mainBlue,
+                  ),
+                ),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const NewLeadsScreen()),
+                  MaterialPageRoute(builder: (_) => const MeetingsScreen()),
                 ),
               ),
             ],
@@ -175,12 +211,12 @@ class _ManagerHomePage extends StatelessWidget {
     );
   }
 
-  /// Tappable KPI card
-  Widget _buildKpiCard(
+  // Uniform KPI card with fixed medium height
+  static Widget _buildKpiCard(
     BuildContext context, {
     required String title,
-    required String value,
     required IconData icon,
+    Widget? valueWidget,
     required VoidCallback onTap,
   }) {
     return InkWell(
@@ -189,27 +225,34 @@ class _ManagerHomePage extends StatelessWidget {
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
+        child: Container(
+          height: 140, //fixed, medium size for all KPI cards
+          width: double.infinity,
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 30, color: mainBlue),
-              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(icon, size: 30, color: mainBlue),
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
               Text(
                 title,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(fontSize: 15, color: Colors.grey),
               ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: mainBlue,
-                ),
-              ),
+              valueWidget ??
+                  const Text(
+                    '—',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: mainBlue,
+                    ),
+                  ),
             ],
           ),
         ),
@@ -217,7 +260,7 @@ class _ManagerHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityItem(String activity) {
+  static Widget _buildActivityItem(String activity) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
       elevation: 2,
@@ -226,6 +269,92 @@ class _ManagerHomePage extends StatelessWidget {
         leading: const Icon(Icons.history, color: mainBlue),
         title: Text(activity, style: const TextStyle(fontSize: 14)),
       ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// KPI value widgets
+// -----------------------------------------------------------------------------
+
+/// Avg company rating as "X.Y★" using SupabaseService.companyRatingsSummaryAggregate()
+class _CustomerSatisfactionValue extends StatelessWidget {
+  const _CustomerSatisfactionValue();
+  static const Color mainBlue = Color(0xFF182D53);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: svc.SupabaseService.companyRatingsSummaryAggregate(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 20,
+            child: LinearProgressIndicator(minHeight: 4),
+          );
+        }
+        if (snap.hasError || !snap.hasData) {
+          return const Text(
+            '—',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: mainBlue,
+            ),
+          );
+        }
+        final overall = (snap.data!['overall'] as Map<String, dynamic>?);
+        final avg = (overall?['avg'] as num?)?.toDouble() ?? 0.0;
+        return Text(
+          '${avg.toStringAsFixed(1)}★',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: mainBlue,
+          ),
+        );
+        // If you later want last-30-days, add another method and display here.
+      },
+    );
+  }
+}
+
+/// Total leads count (uses your existing getLeads() service)
+class _LeadsCountValue extends StatelessWidget {
+  const _LeadsCountValue();
+  static const Color mainBlue = Color(0xFF182D53);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: svc.SupabaseService.getLeads(),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 20,
+            child: LinearProgressIndicator(minHeight: 4),
+          );
+        }
+        if (snap.hasError || !snap.hasData) {
+          return const Text(
+            '—',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: mainBlue,
+            ),
+          );
+        }
+        final count = snap.data!.length;
+        return Text(
+          '$count',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: mainBlue,
+          ),
+        );
+      },
     );
   }
 }
