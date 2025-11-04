@@ -64,7 +64,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         ),
         onOpenLeads: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const LeadsScreen()),
+          MaterialPageRoute(builder: (_) => const EmployeeLeadsScreen()),
         ),
       ),
       const EmployeeProfileScreen(),

@@ -16,7 +16,7 @@ import 'screens/add_customer_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Initialize Supabase before runApp
+  // Initialize Supabase before runApp
   await Supabase.initialize(
     url: const String.fromEnvironment(
       'SB_URL',
@@ -48,7 +48,7 @@ class App extends StatelessWidget {
       // Start app on StartScreen (splash → sign in)
       initialRoute: '/start',
 
-      // ✅ Register all routes
+      // Register all routes
       routes: {
         '/start': (_) => const StartScreen(),
         '/login': (_) => const SignIn(),

@@ -1,8 +1,8 @@
 // lib/data/supabase_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// (Optional) tiny Task model used by the task helpers below.
-/// Delete this if you already have your own Task class.
+//tiny Task model used by the task helpers below.
+
 class Task {
   final int id;
   final String title;

@@ -166,7 +166,7 @@ class _ManagerHomePage extends StatelessWidget {
                 valueWidget: const _LeadsCountValue(),
                 onTap: () => Navigator.of(
                   context,
-                ).push(MaterialPageRoute(builder: (_) => const LeadsScreen())),
+                ).push(MaterialPageRoute(builder: (_) => const ManagerLeadsDashboard())),
               ),
               _buildKpiCard(
                 context,

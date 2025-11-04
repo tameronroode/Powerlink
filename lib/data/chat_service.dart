@@ -165,7 +165,7 @@ class ChatService {
   }) async {
     final row = <String, dynamic>{
       'conversation_id': conversationId,
-      'sender_id': _db.auth.currentUser!.id, // ✅ matches messages.sender_id
+      'sender_id': _db.auth.currentUser!.id,
       'body': body,
       if (attachments != null) 'attachments': attachments,
     };
